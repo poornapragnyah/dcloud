@@ -44,7 +44,7 @@ export const useFileStorage = () => {
       const blockTimestamp = await tx
         .getBlock()
         .then((block) => block.timestamp);
-      const createdAt = new Date(blockTimestamp * owner1000).toISOString(); // Convert to ISO string
+      const createdAt = new Date(blockTimestamp * 1000).toISOString(); // Convert to ISO string
 
       // 4. Return file metadata
       const fileId = receipt.events[0].args.fileId.toString();

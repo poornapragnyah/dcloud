@@ -18,7 +18,7 @@ const TransactionHistory = () => {
         setLoading(true);
 
         const latestBlock = await provider.getBlockNumber();
-        const fromBlock = Math.max(latestBlock - 2000, 0);
+        const fromBlock = 0;
         const toBlock = latestBlock;
 
         const filter = {
@@ -33,10 +33,9 @@ const TransactionHistory = () => {
         };
 
         const logs = await provider.getLogs(filter);
-        const recentLogs = logs.slice(-100); // Only process last 100 logs
-
+        
         const txList = await Promise.all(
-          recentLogs.map(async (log) => {
+          logs.map(async (log) => {
             const tx = await provider.getTransaction(log.transactionHash);
             const receipt = await provider.getTransactionReceipt(
               log.transactionHash
@@ -55,12 +54,11 @@ const TransactionHistory = () => {
           })
         );
 
-        // Filter transactions to only include those from the current user
         const userTransactions = txList.filter(tx => 
           tx.from.toLowerCase() === account.toLowerCase()
         );
 
-        setTransactions(userTransactions.reverse());
+        setTransactions(userTransactions.sort((a, b) => b.timestamp - a.timestamp));
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
