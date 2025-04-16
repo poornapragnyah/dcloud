@@ -55,7 +55,7 @@ const FileList = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-2xl mr-3">
-                      {getFileTypeIcon(file.type.split("/")[1])}
+                      {getFileTypeIcon(file.name)}
                     </span>
                     <div>
                       <p className="text-sm font-medium text-primary-600 truncate">
