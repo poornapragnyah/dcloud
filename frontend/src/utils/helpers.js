@@ -15,9 +15,16 @@ export const getFileExtension = (filename) => {
   return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
 };
 
-export const getFileTypeIcon = (extension) => {
+export const getFileTypeIcon = (fileName) => {
+  // Ensure fileName is a string and contains a valid extension
+  if (!fileName || !fileName.includes(".")) {
+    return "📄"; // Return default icon if no extension is found
+  }
+
+  // Split and get the file extension
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+
   // Return appropriate icon based on file extension
-  // This would be expanded with actual icon imports
   const fileTypes = {
     pdf: "📄",
     doc: "📝",
@@ -32,8 +39,8 @@ export const getFileTypeIcon = (extension) => {
     gif: "🖼️",
     mp3: "🎵",
     mp4: "🎬",
-    default: "📁",
+    default: "📄",
   };
 
-  return fileTypes[extension.toLowerCase()] || fileTypes.default;
+  return fileTypes[ext] || fileTypes.default;
 };

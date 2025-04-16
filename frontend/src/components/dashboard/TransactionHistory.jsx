@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../../hooks/useWeb3";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { truncateAddress } from "../../utils/helpers";
-import { ethers } from "ethers";
+import { CONTRACT_ADDRESS } from "../../utils/constants";
+import { id, toBeHex } from "ethers";
 
 const TransactionHistory = () => {
   const { account, provider } = useWeb3();
@@ -21,10 +22,14 @@ const TransactionHistory = () => {
         const toBlock = latestBlock;
 
         const filter = {
-          fromBlock: ethers.utils.hexValue(fromBlock),
-          toBlock: ethers.utils.hexValue(toBlock),
-          address: "0xYourContractAddress", // Replace with your contract address
-          topics: ["0xYourEventTopic"], // Replace with your event topic hash
+          fromBlock: toBeHex(fromBlock),
+          toBlock: toBeHex(toBlock),
+          address: CONTRACT_ADDRESS,
+          topics: [
+            id(
+              "FileUploaded(uint256,address,string,string,string,string,uint256)"
+            ),
+          ],
         };
 
         const logs = await provider.getLogs(filter);
@@ -50,7 +55,7 @@ const TransactionHistory = () => {
           })
         );
 
-        setTransactions(txList);
+        setTransactions(txList.reverse());
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
@@ -64,7 +69,7 @@ const TransactionHistory = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Transaction History</h2>
+        <h2 className="text-xl font-semibold mb-4">File Transaction History</h2>
         <div className="flex justify-center py-6">
           <LoadingSpinner />
         </div>
@@ -104,10 +109,10 @@ const TransactionHistory = () => {
               <tr key={tx.hash}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-primary-600">
                   <a
-                    href={`https://goerli.etherscan.io/tx/${tx.hash}`}
+                    href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:underline text-blue-600"
                   >
                     {truncateAddress(tx.hash)}
                   </a>

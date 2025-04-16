@@ -7,7 +7,7 @@ import {
   formatFileSize,
   truncateAddress,
 } from "../../utils/helpers";
-import { getIPFSUrl } from "../../services/ipfsService";
+import IPFSService from "../../services/ipfsService";
 
 const FileList = () => {
   const { getUserFiles, userFiles, isLoading } = useFileStorage();
@@ -71,15 +71,19 @@ const FileList = () => {
                     </div>
                   </div>
                   <div className="flex items-center">
-                    <a
-                      href={getIPFSUrl(file.ipfsHash)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {/* Wrap external link with a non-anchor element */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(
+                          IPFSService.getFileUrl(file.ipfsHash),
+                          "_blank"
+                        );
+                      }}
                       className="mr-2 text-primary-600 hover:text-primary-800"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       View
-                    </a>
+                    </button>
                   </div>
                 </div>
               </Link>

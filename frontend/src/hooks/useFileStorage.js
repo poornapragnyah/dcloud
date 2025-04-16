@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useWeb3 } from "./useWeb3";
-import { uploadToIPFS } from "../services/ipfsService";
+import ipfsService from "../services/ipfsService";
 import { ethers } from "ethers";
 
 export const useFileStorage = () => {
@@ -18,7 +18,7 @@ export const useFileStorage = () => {
       setUploadProgress(10);
 
       // 1. Upload to IPFS
-      const ipfsResult = await uploadToIPFS(file, (progress) => {
+      const ipfsResult = await ipfsService.uploadToPinata(file, (progress) => {
         setUploadProgress(10 + progress * 0.6); // 10-70% for IPFS upload
       });
 
@@ -28,7 +28,7 @@ export const useFileStorage = () => {
       const fileName = file.name;
       const fileType = file.type;
       const fileSize = file.size.toString();
-      const ipfsHash = ipfsResult.cid.toString();
+      const ipfsHash = ipfsResult.file.cid.toString();
 
       const tx = await contract.addFile(fileName, fileType, fileSize, ipfsHash);
 
@@ -36,12 +36,19 @@ export const useFileStorage = () => {
 
       // 3. Wait for transaction confirmation
       const receipt = await tx.wait();
+      console.log("Transaction Receipt:", receipt);
 
       setUploadProgress(100);
       setIsUploading(false);
+      // 4. Get block timestamp (for 'createdAt') from the transaction
+      const blockTimestamp = await tx
+        .getBlock()
+        .then((block) => block.timestamp);
+      const createdAt = new Date(blockTimestamp * owner1000).toISOString(); // Convert to ISO string
 
       // 4. Return file metadata
       const fileId = receipt.events[0].args.fileId.toString();
+      console.log("owner", account);
 
       return {
         id: fileId,
@@ -50,7 +57,7 @@ export const useFileStorage = () => {
         size: fileSize,
         ipfsHash,
         owner: account,
-        createdAt: new Date().toISOString(),
+        createdAt: createdAt,
       };
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -72,10 +79,12 @@ export const useFileStorage = () => {
         return [];
       }
       const files = [];
+      console.log("fileIds", fileIds);
 
       for (const fileId of fileIds) {
         const fileData = await contract.getFile(fileId);
-
+        console.log("fileData", fileData);
+        console.log("createdAt", fileData[6]);
         files.push({
           id: fileData.id.toString(),
           name: fileData.fileName,
@@ -83,7 +92,7 @@ export const useFileStorage = () => {
           size: fileData.fileSize,
           ipfsHash: fileData.ipfsHash,
           owner: fileData.owner,
-          createdAt: new Date(fileData.uploadTime * 1000).toISOString(),
+          createdAt: new Date(Number(fileData[6]) * 1000).toISOString(),
         });
       }
 
@@ -101,7 +110,13 @@ export const useFileStorage = () => {
     if (!contract) return null;
 
     try {
-      const fileData = await contract.files(fileId);
+      const fileData = await contract.getFile(fileId);
+
+      // Ensure the timestamp is converted to a regular number if it's a BigInt
+      const timestamp =
+        fileData.timestamp instanceof BigInt
+          ? Number(fileData.timestamp)
+          : fileData.timestamp;
 
       return {
         id: fileId,
@@ -110,7 +125,7 @@ export const useFileStorage = () => {
         size: fileData.fileSize,
         ipfsHash: fileData.ipfsHash,
         owner: fileData.owner,
-        createdAt: new Date(fileData.timestamp * 1000).toISOString(),
+        createdAt: new Date(Number(timestamp) * 1000).toISOString(),
       };
     } catch (error) {
       console.error("Error getting file details:", error);

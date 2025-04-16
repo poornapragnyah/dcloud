@@ -39,7 +39,7 @@ export const Web3Provider = ({ children }) => {
         setIsConnected(true);
         setChainId(Number(network.chainId));
         setNetworkName(network.name);
-        console.log("Network:", network);
+        // console.log("Network:", network);
 
         return true;
       } else {
