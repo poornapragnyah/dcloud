@@ -37,6 +37,11 @@ const FileList = () => {
     );
   }
 
+  // Sort files by creation date (newest first)
+  const sortedFiles = [...userFiles].sort((a, b) => 
+    new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-5 sm:px-6">
@@ -49,7 +54,7 @@ const FileList = () => {
       </div>
       <div className="border-t border-gray-200">
         <ul className="divide-y divide-gray-200">
-          {userFiles.map((file) => (
+          {sortedFiles.map((file) => (
             <li key={file.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
               <Link to={`/files/${file.id}`} className="block">
                 <div className="flex items-center justify-between">
