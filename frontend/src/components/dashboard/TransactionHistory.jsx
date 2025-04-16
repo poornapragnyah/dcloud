@@ -55,7 +55,12 @@ const TransactionHistory = () => {
           })
         );
 
-        setTransactions(txList.reverse());
+        // Filter transactions to only include those from the current user
+        const userTransactions = txList.filter(tx => 
+          tx.from.toLowerCase() === account.toLowerCase()
+        );
+
+        setTransactions(userTransactions.reverse());
       } catch (error) {
         console.error("Error fetching transactions:", error);
       } finally {
@@ -69,7 +74,7 @@ const TransactionHistory = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">File Transaction History</h2>
+        <h2 className="text-xl font-semibold mb-4">Transaction History</h2>
         <div className="flex justify-center py-6">
           <LoadingSpinner />
         </div>
