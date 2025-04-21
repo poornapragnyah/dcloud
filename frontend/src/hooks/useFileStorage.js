@@ -17,36 +17,29 @@ export const useFileStorage = () => {
       setIsUploading(true);
       setUploadProgress(10);
 
-      // 1. Upload to IPFS
       const ipfsResult = await ipfsService.uploadToPinata(file, (progress) => {
-        setUploadProgress(10 + progress * 0.6); // 10-70% for IPFS upload
+        setUploadProgress(10 + progress * 0.6);
       });
 
       setUploadProgress(70);
 
-      // 2. Store metadata on blockchain
       const fileName = file.name;
       const fileType = file.type;
       const fileSize = file.size.toString();
       const ipfsHash = ipfsResult.file.cid.toString();
 
       const tx = await contract.addFile(fileName, fileType, fileSize, ipfsHash);
-
       setUploadProgress(80);
 
-      // 3. Wait for transaction confirmation
       const receipt = await tx.wait();
       console.log("Transaction Receipt:", receipt);
 
       setUploadProgress(100);
       setIsUploading(false);
-      // 4. Get block timestamp (for 'createdAt') from the transaction
-      const blockTimestamp = await tx
-        .getBlock()
-        .then((block) => block.timestamp);
-      const createdAt = new Date(blockTimestamp * 1000).toISOString(); // Convert to ISO string
 
-      // 4. Return file metadata
+      const blockTimestamp = await tx.getBlock().then((block) => block.timestamp);
+      const createdAt = new Date(blockTimestamp * 1000).toISOString();
+
       const fileId = receipt.events[0].args.fileId.toString();
       console.log("owner", account);
 
@@ -71,20 +64,16 @@ export const useFileStorage = () => {
 
     try {
       setIsLoading(true);
-
       const fileIds = await contract.getUserFiles();
       if (!fileIds || fileIds.length === 0) {
         setUserFiles([]);
         setIsLoading(false);
         return [];
       }
-      const files = [];
-      console.log("fileIds", fileIds);
 
+      const files = [];
       for (const fileId of fileIds) {
         const fileData = await contract.getFile(fileId);
-        console.log("fileData", fileData);
-        console.log("createdAt", fileData[6]);
         files.push({
           id: fileData.id.toString(),
           name: fileData.fileName,
@@ -111,12 +100,9 @@ export const useFileStorage = () => {
 
     try {
       const fileData = await contract.getFile(fileId);
-
-      // Ensure the timestamp is converted to a regular number if it's a BigInt
-      const timestamp =
-        fileData.timestamp instanceof BigInt
-          ? Number(fileData.timestamp)
-          : fileData.timestamp;
+      const timestamp = fileData.timestamp instanceof BigInt
+        ? Number(fileData.timestamp)
+        : fileData.timestamp;
 
       return {
         id: fileId,
@@ -133,6 +119,21 @@ export const useFileStorage = () => {
     }
   };
 
+  //  NEW: Delete File
+  const deleteUserFile = async (fileId) => {
+    if (!contract || !account) return;
+
+    try {
+      const tx = await contract.deleteFile(fileId); // Make sure your smart contract has this
+      await tx.wait();
+
+      // Optionally remove from local state too
+      setUserFiles((prev) => prev.filter((file) => file.id !== fileId));
+    } catch (error) {
+      console.error("Error deleting file:", error);
+    }
+  };
+
   return {
     uploadFile,
     getUserFiles,
@@ -141,5 +142,6 @@ export const useFileStorage = () => {
     uploadProgress,
     userFiles,
     isLoading,
+    deleteUserFile, // 👈 Expose here
   };
 };
