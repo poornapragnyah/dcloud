@@ -124,13 +124,16 @@ export const useFileStorage = () => {
     if (!contract || !account) return;
 
     try {
-      const tx = await contract.deleteFile(fileId); // Make sure your smart contract has this
+      setIsLoading(true);
+      const tx = await contract.deleteFile(fileId);
       await tx.wait();
-
+    
       // Optionally remove from local state too
       setUserFiles((prev) => prev.filter((file) => file.id !== fileId));
+      setIsLoading(false);
     } catch (error) {
       console.error("Error deleting file:", error);
+      setIsLoading(false);
     }
   };
 

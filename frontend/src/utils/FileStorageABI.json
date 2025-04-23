@@ -34,16 +34,16 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getUserFiles",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
+        "internalType": "uint256",
+        "name": "fileId",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "deleteFile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -109,6 +109,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getUserFiles",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -155,6 +168,25 @@
       }
     ],
     "name": "FileUploaded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "fileId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "FileDeleted",
     "type": "event"
   }
 ]

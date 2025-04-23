@@ -10,7 +10,7 @@ import LoadingSpinner from "../common/LoadingSpinner";
 const FileDetails = () => {
   const { fileId } = useParams();
   const navigate = useNavigate();
-  const { getFileDetails } = useFileStorage();
+  const { getFileDetails, deleteFile } = useFileStorage(); // ✅ include deleteFile
   const { account } = useWeb3();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,19 @@ const FileDetails = () => {
 
     fetchFileDetails();
   }, [fileId]);
+
+  const handleDelete = async () => {
+    try {
+      setLoading(true);
+      await deleteFile(fileId); 
+      navigate("/dashboard"); 
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      setError("Failed to delete file");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -137,9 +150,17 @@ const FileDetails = () => {
             View on IPFS
           </a>
 
-          <Button type="danger" className="sm:ml-3">
-            Delete File
-          </Button>
+          {isOwner && (
+          deleting ? (
+            <div className="flex justify-center items-center sm:ml-3 h-10">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <Button type="danger" className="sm:ml-3" onClick={handleDelete}>
+              Delete File
+            </Button>
+          )
+        )}
         </div>
       </div>
     </div>
