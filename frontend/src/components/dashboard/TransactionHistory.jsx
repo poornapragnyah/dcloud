@@ -21,25 +21,36 @@ const TransactionHistory = () => {
         const fromBlock = 0;
         const toBlock = latestBlock;
 
-        const filter = {
+        // Create filters for both upload and delete events
+        const uploadFilter = {
           fromBlock: toBeHex(fromBlock),
           toBlock: toBeHex(toBlock),
           address: CONTRACT_ADDRESS,
           topics: [
-            id(
-              "FileUploaded(uint256,address,string,string,string,string,uint256)"
-            ),
+            id("FileUploaded(uint256,address,string,string,string,string,uint256)")
           ],
         };
 
-        const logs = await provider.getLogs(filter);
-        
-        const txList = await Promise.all(
-          logs.map(async (log) => {
+        const deleteFilter = {
+          fromBlock: toBeHex(fromBlock),
+          toBlock: toBeHex(toBlock),
+          address: CONTRACT_ADDRESS,
+          topics: [
+            id("FileDeleted(uint256,address)")
+          ],
+        };
+
+        // Get both types of logs
+        const [uploadLogs, deleteLogs] = await Promise.all([
+          provider.getLogs(uploadFilter),
+          provider.getLogs(deleteFilter)
+        ]);
+
+        // Process upload transactions
+        const uploadTxList = await Promise.all(
+          uploadLogs.map(async (log) => {
             const tx = await provider.getTransaction(log.transactionHash);
-            const receipt = await provider.getTransactionReceipt(
-              log.transactionHash
-            );
+            const receipt = await provider.getTransactionReceipt(log.transactionHash);
             const block = await provider.getBlock(log.blockNumber);
 
             return {
@@ -50,14 +61,38 @@ const TransactionHistory = () => {
               timestamp: block.timestamp * 1000,
               status: receipt.status === 1 ? "Success" : "Failed",
               gasUsed: receipt.gasUsed.toString(),
+              type: "Upload"
             };
           })
         );
 
-        const userTransactions = txList.filter(tx => 
+        // Process delete transactions
+        const deleteTxList = await Promise.all(
+          deleteLogs.map(async (log) => {
+            const tx = await provider.getTransaction(log.transactionHash);
+            const receipt = await provider.getTransactionReceipt(log.transactionHash);
+            const block = await provider.getBlock(log.blockNumber);
+
+            return {
+              hash: log.transactionHash,
+              from: tx.from,
+              to: tx.to,
+              blockNumber: log.blockNumber,
+              timestamp: block.timestamp * 1000,
+              status: receipt.status === 1 ? "Success" : "Failed",
+              gasUsed: receipt.gasUsed.toString(),
+              type: "Delete"
+            };
+          })
+        );
+
+        // Combine and filter transactions
+        const allTransactions = [...uploadTxList, ...deleteTxList];
+        const userTransactions = allTransactions.filter(tx => 
           tx.from.toLowerCase() === account.toLowerCase()
         );
 
+        // Sort by timestamp (newest first)
         setTransactions(userTransactions.sort((a, b) => b.timestamp - a.timestamp));
       } catch (error) {
         console.error("Error fetching transactions:", error);
@@ -100,6 +135,9 @@ const TransactionHistory = () => {
                 Transaction Hash
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -119,6 +157,15 @@ const TransactionHistory = () => {
                   >
                     {truncateAddress(tx.hash)}
                   </a>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    tx.type === "Upload" 
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                    {tx.type}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(tx.timestamp).toLocaleString()}
