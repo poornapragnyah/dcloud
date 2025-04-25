@@ -155,33 +155,36 @@ export const useFileStorage = () => {
 
   const getSharedFiles = async () => {
     if (!contract || !account) return [];
-
     try {
       setIsLoading(true);
-      const fileIds = await contract.getUserFiles();
-      if (!fileIds || fileIds.length === 0) {
-        setIsLoading(false);
-        return [];
-      }
-
+      const fileIds = await contract.getFilesSharedWithMe();
       const sharedFiles = [];
+      
       for (const fileId of fileIds) {
-        const isShared = await contract.isFileShared(fileId, account);
-        if (isShared) {
-          const fileData = await contract.getFile(fileId);
-          const sharer = fileData.uploader;
-          sharedFiles.push({
-            id: fileData.id.toString(),
-            name: fileData.fileName,
-            type: fileData.fileType,
-            size: fileData.fileSize,
-            ipfsHash: fileData.ipfsHash,
-            owner: sharer,
-            createdAt: new Date(Number(fileData.timestamp) * 1000).toISOString(),
-          });
+        const fileData = await contract.getFile(fileId);
+        
+        // Properly handle BigInt timestamp conversion
+        let formattedDate = null;
+        try {
+          // Convert BigInt to string first, then to number
+          const timestamp = Number(fileData.timestamp.toString()) * 1000;
+          formattedDate = new Date(timestamp).toISOString();
+        } catch (err) {
+          console.warn("Invalid timestamp for file", fileId, err);
         }
+        
+        sharedFiles.push({
+          id: fileId.toString(),
+          name: fileData.fileName,
+          type: fileData.fileType,
+          size: fileData.fileSize,
+          ipfsHash: fileData.ipfsHash,
+          owner: fileData.uploader,
+          createdAt: formattedDate,
+          sharedBy: fileData.uploader
+        });
       }
-
+  
       setIsLoading(false);
       return sharedFiles;
     } catch (error) {
@@ -190,6 +193,7 @@ export const useFileStorage = () => {
       return [];
     }
   };
+  
 
   return {
     uploadFile,

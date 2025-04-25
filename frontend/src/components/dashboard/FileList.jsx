@@ -54,37 +54,54 @@ const FileList = () => {
   const renderFileList = (files, isShared = false) => (
     <ul className="divide-y divide-gray-200">
       {files.map((file) => (
-        <li key={file.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+        <li key={`${isShared ? 'shared-' : 'owned-'}${file.id}`} className="px-4 py-6 sm:px-6 hover:bg-gray-50">
           <div className="flex items-center justify-between">
             <Link to={`/files/${file.id}`} className="flex items-center flex-grow">
-              <span className="text-2xl mr-3">{getFileTypeIcon(file.name)}</span>
+              <span className="text-2xl mr-3">{getFileTypeIcon(file.name || "unknown")}</span>
               <div>
                 <p className="text-sm font-medium text-primary-600 truncate">
-                  {file.name}
+                  {file.name || "File Not Available"}
                 </p>
                 <p className="flex items-center text-xs text-gray-500">
-                  <span>{formatFileSize(file.size)}</span>
-                  <span className="mx-1">•</span>
-                  <span>{new Date(file.createdAt).toLocaleDateString()}</span>
+                  {!isNaN(file.size) && file.size ? (
+                    <>
+                      <span>{formatFileSize(file.size)}</span>
+                      <span className="mx-1">•</span>
+                    </>
+                  ) : (
+                    <span>Size not available</span>
+                  )}
+                  
+                  {file.createdAt && !isNaN(new Date(file.createdAt).getTime()) ? (
+                    <span>{new Date(file.createdAt).toLocaleDateString()}</span>
+                  ) : (
+                    <span>Date not available</span>
+                  )}
+                  
                   {isShared && (
                     <>
                       <span className="mx-1">•</span>
-                      <span>Shared by: {truncateAddress(file.owner)}</span>
+                      <span>Shared by: {file.owner ? truncateAddress(file.owner) : "Unknown"}</span>
                     </>
                   )}
                 </p>
               </div>
             </Link>
             <div className="flex gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(IPFSService.getFileUrl(file.ipfsHash), "_blank");
-                }}
-                className="text-primary-600 hover:text-primary-800"
-              >
-                View
-              </button>
+              {file.ipfsHash ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(IPFSService.getFileUrl(file.ipfsHash), "_blank");
+                  }}
+                  className="text-primary-600 hover:text-primary-800"
+                >
+                  View
+                </button>
+              ) : (
+                <span className="text-gray-400 cursor-not-allowed">View</span>
+              )}
+              
               {!isShared && (
                 <>
                   <button
