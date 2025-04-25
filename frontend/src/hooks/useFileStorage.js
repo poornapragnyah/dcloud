@@ -153,6 +153,44 @@ export const useFileStorage = () => {
     }
   };
 
+  const getSharedFiles = async () => {
+    if (!contract || !account) return [];
+
+    try {
+      setIsLoading(true);
+      const fileIds = await contract.getUserFiles();
+      if (!fileIds || fileIds.length === 0) {
+        setIsLoading(false);
+        return [];
+      }
+
+      const sharedFiles = [];
+      for (const fileId of fileIds) {
+        const isShared = await contract.isFileShared(fileId, account);
+        if (isShared) {
+          const fileData = await contract.getFile(fileId);
+          const sharer = fileData.uploader;
+          sharedFiles.push({
+            id: fileData.id.toString(),
+            name: fileData.fileName,
+            type: fileData.fileType,
+            size: fileData.fileSize,
+            ipfsHash: fileData.ipfsHash,
+            owner: sharer,
+            createdAt: new Date(Number(fileData.timestamp) * 1000).toISOString(),
+          });
+        }
+      }
+
+      setIsLoading(false);
+      return sharedFiles;
+    } catch (error) {
+      console.error("Error getting shared files:", error);
+      setIsLoading(false);
+      return [];
+    }
+  };
+
   return {
     uploadFile,
     getUserFiles,
@@ -161,7 +199,8 @@ export const useFileStorage = () => {
     uploadProgress,
     userFiles,
     isLoading,
-    deleteUserFile, 
-    shareFile
+    deleteUserFile,
+    shareFile,
+    getSharedFiles,
   };
 };
