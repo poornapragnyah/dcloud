@@ -8,11 +8,13 @@ import {
   truncateAddress,
 } from "../../utils/helpers";
 import IPFSService from "../../services/ipfsService";
-// import { toast } from "react-toastify";
+import { toast } from "react-toastify";
 
 const FileList = () => {
-  const { getUserFiles, userFiles, isLoading, deleteUserFile } = useFileStorage();
+  const { getUserFiles, userFiles, isLoading, deleteUserFile, shareFile } = useFileStorage();
   const [confirmingFile, setConfirmingFile] = useState(null); // for delete confirmation
+  const [sharingFile, setSharingFile] = useState(null); // for share modal
+  const [recipientAddress, setRecipientAddress] = useState(""); // for share modal
 
   useEffect(() => {
     getUserFiles();
@@ -20,13 +22,30 @@ const FileList = () => {
 
   const handleDelete = async (fileId) => {
     try {
-      await deleteUserFile(fileId); // you should have this in your hook/service
+      await deleteUserFile(fileId);
       toast.success("File deleted successfully");
-      getUserFiles(); // refresh list
+      getUserFiles();
     } catch (error) {
       toast.error("Failed to delete file");
     } finally {
       setConfirmingFile(null);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!sharingFile || !recipientAddress) return;
+    
+    try {
+      const success = await shareFile(sharingFile.id, recipientAddress);
+      if (success) {
+        toast.success("File shared successfully");
+        setSharingFile(null);
+        setRecipientAddress("");
+      } else {
+        toast.error("Failed to share file");
+      }
+    } catch (error) {
+      toast.error("Failed to share file");
     }
   };
 
@@ -92,7 +111,16 @@ const FileList = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setConfirmingFile(file); // show confirmation dialog
+                      setSharingFile(file);
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    Share
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmingFile(file);
                     }}
                     className="text-red-600 hover:text-red-800"
                   >
@@ -125,6 +153,42 @@ const FileList = () => {
                 className="px-4 py-1 bg-red-600 text-white rounded"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {sharingFile && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg p-6 shadow-lg w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-2">Share File</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Share <strong>{sharingFile.name}</strong> with another wallet address
+            </p>
+            <input
+              type="text"
+              value={recipientAddress}
+              onChange={(e) => setRecipientAddress(e.target.value)}
+              placeholder="Enter recipient's wallet address"
+              className="w-full px-3 py-2 border rounded mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setSharingFile(null);
+                  setRecipientAddress("");
+                }}
+                className="px-4 py-1 rounded border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShare}
+                className="px-4 py-1 bg-blue-600 text-white rounded"
+              >
+                Share
               </button>
             </div>
           </div>
