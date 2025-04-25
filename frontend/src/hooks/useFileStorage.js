@@ -164,6 +164,64 @@ export const useFileStorage = () => {
     }
   };
 
+  const shareFile = async (fileId, recipientAddress) => {
+    if (!contract || !account) return;
+
+    try {
+      setIsLoading(true);
+      const tx = await contract.shareFile(fileId, recipientAddress);
+      await tx.wait();
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error sharing file:", error);
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  const getSharedFiles = async () => {
+    if (!contract || !account) return [];
+    try {
+      setIsLoading(true);
+      const fileIds = await contract.getFilesSharedWithMe();
+      const sharedFiles = [];
+      
+      for (const fileId of fileIds) {
+        const fileData = await contract.getFile(fileId);
+        
+        // Properly handle BigInt timestamp conversion
+        let formattedDate = null;
+        try {
+          // Convert BigInt to string first, then to number
+          const timestamp = Number(fileData.timestamp.toString()) * 1000;
+          formattedDate = new Date(timestamp).toISOString();
+        } catch (err) {
+          console.warn("Invalid timestamp for file", fileId, err);
+        }
+        
+        sharedFiles.push({
+          id: fileId.toString(),
+          name: fileData.fileName,
+          type: fileData.fileType,
+          size: fileData.fileSize,
+          ipfsHash: fileData.ipfsHash,
+          owner: fileData.uploader,
+          createdAt: formattedDate,
+          sharedBy: fileData.uploader
+        });
+      }
+  
+      setIsLoading(false);
+      return sharedFiles;
+    } catch (error) {
+      console.error("Error getting shared files:", error);
+      setIsLoading(false);
+      return [];
+    }
+  };
+  
+
   return {
     uploadFile,
     getUserFiles,
@@ -173,5 +231,7 @@ export const useFileStorage = () => {
     userFiles,
     isLoading,
     deleteUserFile,
+    shareFile,
+    getSharedFiles,
   };
 };
