@@ -21,10 +21,10 @@ const FileList = () => {
   const handleDelete = async (fileId) => {
     try {
       await deleteUserFile(fileId); // you should have this in your hook/service
-      toast.success("File deleted successfully");
+      // toast.success("File deleted successfully");
       getUserFiles(); // refresh list
     } catch (error) {
-      toast.error("Failed to delete file");
+      // toast.error("Failed to delete file");
     } finally {
       setConfirmingFile(null);
     }

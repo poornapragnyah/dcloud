@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useWeb3 } from "./useWeb3";
 import ipfsService from "../services/ipfsService";
 import { ethers } from "ethers";
+//import { toast } from "react-toastify";
 
 export const useFileStorage = () => {
   const { contract, account } = useWeb3();
@@ -119,21 +120,47 @@ export const useFileStorage = () => {
     }
   };
 
-  //  NEW: Delete File
   const deleteUserFile = async (fileId) => {
     if (!contract || !account) return;
 
     try {
       setIsLoading(true);
+
+      // First get the file details to get the IPFS hash
+      const fileData = await contract.getFile(fileId);
+      const ipfsHash = fileData.ipfsHash;
+      if (!ipfsHash) {
+        console.error("No IPFS hash found for the file");
+        setIsLoading(false);
+        return;
+      }
+      console.log("Deleting file with ID:", fileId);
+
+      // Delete from blockchain first
       const tx = await contract.deleteFile(fileId);
       await tx.wait();
-    
-      // Optionally remove from local state too
+
+      // Then remove from Pinata
+      if (ipfsHash) {
+        try {
+          const result = await ipfsService.unpinFromPinata(ipfsHash);
+          console.log("Unpinning result:", result);
+          if (!result.success) {
+            console.error("Failed to unpin from Pinata:", result.error);
+          }
+        } catch (pinataError) {
+          console.error("Error unpinning from Pinata:", pinataError);
+          // We don't throw here as the blockchain deletion was successful
+        }
+      }
+
+      // Update local state
       setUserFiles((prev) => prev.filter((file) => file.id !== fileId));
       setIsLoading(false);
     } catch (error) {
       console.error("Error deleting file:", error);
       setIsLoading(false);
+      throw error; // Re-throw to handle in the UI
     }
   };
 
@@ -145,6 +172,6 @@ export const useFileStorage = () => {
     uploadProgress,
     userFiles,
     isLoading,
-    deleteUserFile, // 👈 Expose here
+    deleteUserFile,
   };
 };
