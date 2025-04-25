@@ -137,6 +137,22 @@ export const useFileStorage = () => {
     }
   };
 
+  const shareFile = async (fileId, recipientAddress) => {
+    if (!contract || !account) return;
+
+    try {
+      setIsLoading(true);
+      const tx = await contract.shareFile(fileId, recipientAddress);
+      await tx.wait();
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error sharing file:", error);
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   return {
     uploadFile,
     getUserFiles,
@@ -145,6 +161,7 @@ export const useFileStorage = () => {
     uploadProgress,
     userFiles,
     isLoading,
-    deleteUserFile, // 👈 Expose here
+    deleteUserFile, 
+    shareFile
   };
 };
